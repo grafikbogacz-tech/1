@@ -1,0 +1,24 @@
+name: Claude AI Responder
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+jobs:
+  respond:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Claude AI Responder
+        uses: dragon-ai-agent/run-claude-obo@v1.0.2
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
