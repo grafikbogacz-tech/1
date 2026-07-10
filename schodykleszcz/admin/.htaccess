@@ -1,0 +1,5 @@
+# Zezwól tylko na pliki PHP – zablokuj bezpośredni dostęp do JSON
+<Files "*.json">
+    Order deny,allow
+    Deny from all
+</Files>
