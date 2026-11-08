@@ -214,6 +214,11 @@
                 .blog-card-v2__read-more i { margin-left:4px; }
                 @media(max-width:991px){ .blog-grid__item { width:50%; } }
                 @media(max-width:599px){ .blog-grid__item { width:100%; } }
+                .blog-pagination { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:8px; margin:20px 0 10px; }
+                .blog-pagination[hidden] { display:none; }
+                .blog-pagination a { min-width:42px; padding:8px 14px; text-align:center; background:#fff; border:1px solid #ddd; border-radius:2px; color:#555; font-family:'Oswald',sans-serif; letter-spacing:.06em; text-decoration:none; transition:all .2s ease; }
+                .blog-pagination a:hover, .blog-pagination a.active { background:#005117; border-color:#005117; color:#fff; text-decoration:none; }
+                .blog-pagination a.disabled { opacity:.4; pointer-events:none; }
                 </style>
 
                 <div class="blog-grid" id="blogGrid">
@@ -365,25 +370,79 @@
                 </div>
                 <!-- /SIATKA -->
 
+                <!-- PAGINACJA -->
+                <nav class="blog-pagination" id="blogPagination" aria-label="Paginacja wpisów" hidden></nav>
+
                 <script>
                 (function(){
+                    var PER_PAGE = 6; // liczba wpisów na stronę
                     var btns = document.querySelectorAll('.blog-filter-btn');
-                    var items = document.querySelectorAll('#blogGrid .blog-grid__item');
+                    var items = Array.prototype.slice.call(document.querySelectorAll('#blogGrid .blog-grid__item'));
+                    var nav = document.getElementById('blogPagination');
+                    var filter = 'wszystkie';
+                    var page = 1;
+
+                    var m = /[?&]strona=(\d+)/.exec(location.search);
+                    if (m) { page = Math.max(1, parseInt(m[1], 10)); }
+
+                    function render(scroll){
+                        var visible = items.filter(function(item){
+                            return filter === 'wszystkie' || item.dataset.category === filter;
+                        });
+                        var pages = Math.max(1, Math.ceil(visible.length / PER_PAGE));
+                        if (page > pages) { page = pages; }
+                        var from = (page - 1) * PER_PAGE, to = from + PER_PAGE;
+
+                        items.forEach(function(item){ item.classList.add('hidden'); });
+                        visible.forEach(function(item, i){
+                            if (i >= from && i < to) { item.classList.remove('hidden'); }
+                        });
+
+                        nav.innerHTML = '';
+                        if (pages <= 1) { nav.hidden = true; return; }
+                        nav.hidden = false;
+
+                        function link(label, target, cls, aria){
+                            var a = document.createElement('a');
+                            a.href = '?strona=' + target;
+                            a.textContent = label;
+                            if (cls) { a.className = cls; }
+                            if (aria) { a.setAttribute('aria-label', aria); }
+                            if (target === page && cls === 'active') { a.setAttribute('aria-current', 'page'); }
+                            a.addEventListener('click', function(e){
+                                e.preventDefault();
+                                page = target;
+                                render(true);
+                                if (history.replaceState) {
+                                    history.replaceState(null, '', target === 1 ? location.pathname : '?strona=' + target);
+                                }
+                            });
+                            nav.appendChild(a);
+                        }
+
+                        link('«', Math.max(1, page - 1), page === 1 ? 'disabled' : '', 'Poprzednia strona');
+                        for (var i = 1; i <= pages; i++) { link(String(i), i, i === page ? 'active' : '', 'Strona ' + i); }
+                        link('»', Math.min(pages, page + 1), page === pages ? 'disabled' : '', 'Następna strona');
+
+                        if (scroll) {
+                            var top = document.querySelector('.blog-grid-section').getBoundingClientRect().top + window.pageYOffset - 20;
+                            window.scrollTo(0, top);
+                        }
+                    }
+
                     btns.forEach(function(btn){
                         btn.addEventListener('click', function(e){
                             e.preventDefault();
                             btns.forEach(function(b){ b.classList.remove('active'); });
                             btn.classList.add('active');
-                            var filter = btn.textContent.trim().toLowerCase();
-                            items.forEach(function(item){
-                                if(filter === 'wszystkie' || item.dataset.category === filter){
-                                    item.classList.remove('hidden');
-                                } else {
-                                    item.classList.add('hidden');
-                                }
-                            });
+                            filter = btn.textContent.trim().toLowerCase();
+                            page = 1;
+                            if (history.replaceState) { history.replaceState(null, '', location.pathname); }
+                            render(false);
                         });
                     });
+
+                    render(false);
                 })();
                 </script>
 
